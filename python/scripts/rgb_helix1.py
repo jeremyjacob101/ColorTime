@@ -1,5 +1,46 @@
-import re
 from pathlib import Path
+import numpy as np
+import re
+
+
+def spiral_path_diagonal(
+    start: float = 50.0,
+    end: float = 200.0,
+    n_points: int = 1200,
+    turns: float = 3.5,
+    r_max: float = 90.0,
+):
+
+    t = np.linspace(0.0, 1.0, n_points)
+
+    # Travel along the diagonal from start -> end
+    v = start + (end - start) * t
+    base = np.stack([v, v, v], axis=1)
+
+    # Radius profile: 0 at ends, max at middle
+    radius = r_max * np.sin(np.pi * t)
+
+    # Spiral angle
+    theta = 2.0 * np.pi * turns * t
+
+    # Orthonormal basis perpendicular to axis (1,1,1)
+    axis = np.array([1.0, 1.0, 1.0])
+    axis = axis / np.linalg.norm(axis)
+
+    a = np.array([1.0, 0.0, 0.0])
+    u = a - np.dot(a, axis) * axis
+    u = u / np.linalg.norm(u)
+    w = np.cross(axis, u)
+
+    offsets = (radius * np.cos(theta))[:, None] * u + (radius * np.sin(theta))[
+        :, None
+    ] * w
+    pts = base + offsets
+
+    # Keep it inside RGB cube
+    pts = np.clip(pts, 0.0, 255.0)
+
+    return pts[:, 0], pts[:, 1], pts[:, 2]
 
 
 def find_repo_root(start: Path) -> Path:
@@ -86,6 +127,14 @@ def main():
 
     # Draw scatter
     sc = ax.scatter(R, G, B, c=point_colors, s=30, depthshade=True)
+    # sx, sy, sz = spiral_path_diagonal(
+    #     start=50.0,
+    #     end=200.0,
+    #     n_points=1600,
+    #     turns=4,
+    #     r_max=98.0,
+    # )
+    # ax.plot(sx, sy, sz, linewidth=4, color="black", alpha=0.98)
 
     # Optional: annotate a handful (too many labels becomes unreadable)
     # Here: label the 10 brightest colors
