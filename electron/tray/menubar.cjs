@@ -15,7 +15,7 @@ let lastPayload = null;
 async function createMenubarApp() {
   Menu.setApplicationMenu(null);
   const colorsPath = path.join(app.getAppPath(), "src/colors/ColorList.ts");
-  console.log("Looking for colors at:", colorsPath);
+
   if (!fs.existsSync(colorsPath)) {
     var ColorsToRGB = {};
   } else {
