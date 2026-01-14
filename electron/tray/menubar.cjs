@@ -109,19 +109,10 @@ async function createMenubarApp() {
         enabled: false,
       },
       {
-        label: ` ${colorName}`,
+        label: `${colorName}`,
         submenu: [{ label: "Add to My Colors", click: () => {} }],
       },
       { type: "separator" },
-      {
-        label: "Open Color",
-        click: () => {
-          if (!win?.isVisible?.()) toggleWindow();
-        },
-      },
-
-      { type: "separator" },
-
       {
         label: isShown ? "Hide Color" : "Show Color",
         click: toggleWindow,

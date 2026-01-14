@@ -1,6 +1,6 @@
 {
   "name": "colurtime",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "private": true,
   "type": "module",
   "description": "A simple desktop app that shows the time as a color.",
