@@ -37,3 +37,52 @@
     letter-spacing: 0.3px;
     opacity: 0.92;
 }
+
+.range-panel {
+    margin-top: 18px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+}
+
+.range-title {
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-bottom: 6px;
+}
+
+.range-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+.range-sliders {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: auto;
+    position: static;
+}
+
+.range-row {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.range-row-label {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.range-row input[type="range"] {
+    position: static;
+    width: 100%;
+    margin: 0;
+}

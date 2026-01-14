@@ -13,6 +13,30 @@ let win = null;
 let lastPayload = null;
 
 async function createMenubarApp() {
+  let range = { min: 50, max: 200 };
+
+  const broadcastRange = () => {
+    if (win && !win.isDestroyed()) win.webContents.send("colur:range", range);
+  };
+
+  const refreshNow = () => {
+    const rgb = currentColor(range);
+    lastPayload = { rgb, ts: Date.now() };
+
+    if (tray) tray.setImage(coloredCircleImage(rgb));
+    if (win && !win.isDestroyed())
+      win.webContents.send("colur:color", lastPayload);
+
+    updateTrayMenu(win?.isVisible?.() ?? false);
+  };
+
+  const setRange = (next) => {
+    range = normalizeRange(next);
+    saveRange(range);
+    broadcastRange();
+    refreshNow();
+  };
+
   Menu.setApplicationMenu(null);
   const colorsPath = path.join(app.getAppPath(), "src/colors/ColorList.ts");
 
@@ -26,6 +50,39 @@ async function createMenubarApp() {
       var ColorsToRGB = {};
     }
   }
+
+  const rangePath = path.join(app.getPath("userData"), "range.json");
+
+  const clampInt = (v, lo, hi) => {
+    v = Math.round(Number(v));
+    if (!Number.isFinite(v)) return lo;
+    return Math.min(hi, Math.max(lo, v));
+  };
+
+  const normalizeRange = (r) => {
+    let min = clampInt(r?.min ?? 50, 0, 255);
+    let max = clampInt(r?.max ?? 200, 0, 255);
+    if (min > max) [min, max] = [max, min];
+    if (min === max) max = Math.min(255, min + 1);
+    return { min, max };
+  };
+
+  const loadRange = () => {
+    try {
+      const raw = fs.readFileSync(rangePath, "utf8");
+      return normalizeRange(JSON.parse(raw));
+    } catch {
+      return normalizeRange({ min: 50, max: 200 });
+    }
+  };
+
+  const saveRange = (r) => {
+    try {
+      fs.writeFileSync(rangePath, JSON.stringify(r), "utf8");
+    } catch {}
+  };
+
+  range = loadRange();
 
   const getClosestColorName = (rgb) => {
     let minDistance = Infinity;
@@ -42,7 +99,7 @@ async function createMenubarApp() {
 
   const updateTrayMenu = (isShown) => {
     if (!tray) return;
-    const rgb = lastPayload?.rgb || currentColor();
+    const rgb = lastPayload?.rgb || currentColor(range);
     const colorName = getClosestColorName(rgb);
 
     const contextMenu = Menu.buildFromTemplate([
@@ -56,6 +113,15 @@ async function createMenubarApp() {
         submenu: [{ label: "Add to My Colors", click: () => {} }],
       },
       { type: "separator" },
+      {
+        label: "Open Color",
+        click: () => {
+          if (!win?.isVisible?.()) toggleWindow();
+        },
+      },
+
+      { type: "separator" },
+
       {
         label: isShown ? "Hide Color" : "Show Color",
         click: toggleWindow,
@@ -116,6 +182,10 @@ async function createMenubarApp() {
       win.loadFile(path.join(app.getAppPath(), "dist/index.html"));
     }
 
+    win.webContents.on("did-finish-load", () => {
+      broadcastRange();
+    });
+
     win.on("blur", () => {
       if (win && win.isVisible()) {
         win.hide();
@@ -128,7 +198,7 @@ async function createMenubarApp() {
 
   function startClockLoop() {
     const tick = () => {
-      const rgb = currentColor();
+      const rgb = currentColor(range);
       lastPayload = { rgb, ts: Date.now() };
 
       if (tray) {
@@ -145,10 +215,17 @@ async function createMenubarApp() {
   createWindow();
 
   ipcMain.handle("colur:getColor", () => {
-    return lastPayload || { rgb: currentColor(), ts: Date.now() };
+    return lastPayload || { rgb: currentColor(range), ts: Date.now() };
   });
 
-  const initialColor = currentColor();
+  ipcMain.handle("colur:getRange", () => range);
+
+  ipcMain.handle("colur:setRange", (_evt, next) => {
+    setRange(next);
+    return range;
+  });
+
+  const initialColor = currentColor(range);
   tray = new Tray(coloredCircleImage(initialColor));
   tray.setToolTip("ColurTime");
   tray.on("mouse-enter", () => updateTrayMenu(win.isVisible()));
