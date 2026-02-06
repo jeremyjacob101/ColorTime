@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import "../css/MyColors.css";
-
-type RGB = { r: number; g: number; b: number };
-type MyColor = { name: string; rgb: RGB };
+import "../css/MyColorsScreen.css";
+import { colur } from "../config/types/colurTime";
 
 const clamp = (n: number, lo: number, hi: number) =>
   Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo;
@@ -10,25 +8,18 @@ const clamp = (n: number, lo: number, hi: number) =>
 const luminance = (c: RGB) =>
   (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) / 255;
 
-export default function MyColors() {
+export default function MyColorsScreen() {
   const [items, setItems] = useState<MyColor[]>([]);
 
   useEffect(() => {
-    let unsub: (() => void) | undefined;
+    const unsub = colur.onMyColors((next: MyColor[]) => {
+      setItems(Array.isArray(next) ? next : []);
+    });
 
-    (async () => {
-      try {
-        const initial = await window.colurTime?.getMyColors?.();
-        if (Array.isArray(initial)) setItems(initial);
-      } catch {}
-
-      unsub = window.colurTime?.onMyColors?.((next: MyColor[]) => {
-        if (Array.isArray(next)) setItems(next);
-      });
-    })();
+    colur.getMyColors().then(setItems);
 
     return () => {
-      unsub?.();
+      unsub();
     };
   }, []);
 
@@ -56,9 +47,8 @@ export default function MyColors() {
             const g = clamp(it.rgb?.g ?? 0, 0, 255);
             const b = clamp(it.rgb?.b ?? 0, 0, 255);
 
-            const bg: RGB = { r, g, b };
             const fg =
-              luminance(bg) > 0.65
+              luminance({ r, g, b }) > 0.65
                 ? "rgba(0,0,0,0.82)"
                 : "rgba(255,255,255,0.92)";
 

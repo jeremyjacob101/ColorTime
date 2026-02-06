@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { ColorsToRGB } from "../colors/ColorList";
-import "../css/MainScreen.css";
-
-type RGB = { r: number; g: number; b: number };
-type ColorPayload = { rgb: RGB; ts: number };
-type Range = { min: number; max: number };
+import "../css/ColorScreen.css";
+import { colur } from "../config/types/colurTime";
 
 const toHex = ({ r, g, b }: RGB) =>
   `#${[r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
@@ -12,22 +9,20 @@ const toHex = ({ r, g, b }: RGB) =>
 const getLuminance = (bg: RGB) =>
   (0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b) / 255;
 
-export default function MainScreen() {
+export default function ColorScreen() {
   const [payload, setPayload] = useState<ColorPayload | null>(null);
-  const [range, setRange] = useState<Range>({ min: 30, max: 225 });
+  const [range, setRange] = useState<ColurRange>({ min: 25, max: 230 });
 
   useEffect(() => {
-    window.colurTime?.getColor?.().then(setPayload);
-    const unsubColor = window.colurTime?.onColor?.(setPayload);
+    colur.getColor().then(setPayload);
+    const unsubColor = colur.onColor(setPayload);
 
-    window.colurTime?.getRange?.().then((r: Range) => r && setRange(r));
-    const unsubRange = window.colurTime?.onRange?.(
-      (r: Range) => r && setRange(r),
-    );
+    colur.getRange().then((r) => r && setRange(r));
+    const unsubRange = colur.onRange((r) => r && setRange(r));
 
     return () => {
-      unsubColor?.();
-      unsubRange?.();
+      unsubColor();
+      unsubRange();
     };
   }, []);
 
@@ -46,20 +41,18 @@ export default function MainScreen() {
   const textColor =
     getLuminance(rgb) > 0.65 ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.9)";
 
-  const applyRange = (next: Range) => {
+  const applyRange = (next: ColurRange) => {
     setRange(next);
-    window.colurTime?.setRange?.(next);
+    colur.setRange(next);
   };
 
   const onMinChange = (v: number) => {
     const nextMin = Math.max(0, Math.min(255, v));
-    // don't touch max; just prevent crossing
     applyRange({ min: Math.min(nextMin, range.max - 1), max: range.max });
   };
 
   const onMaxChange = (v: number) => {
     const nextMax = Math.max(0, Math.min(255, v));
-    // don't touch min; just prevent crossing
     applyRange({ min: range.min, max: Math.max(nextMax, range.min + 1) });
   };
 
