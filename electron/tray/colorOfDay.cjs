@@ -72,11 +72,6 @@ function currentColor(range) {
     d.getSeconds() / 60 +
     d.getMilliseconds() / 60000;
 
-  // Map clock time to s in [0..2] such that:
-  // - noon (720) => s = 0  (start)
-  // - midnight (0 / 1440) => s = 1 (end)
-  // - midnight -> noon => s: 1..2 (return leg)
-  // - noon -> midnight => s: 0..1 (down leg)
   let s;
   if (mm < 720) {
     s = 1 + mm / 720; // 1..2  (midnight -> noon)
