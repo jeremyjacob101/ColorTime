@@ -3,27 +3,30 @@ import numpy as np
 import re
 
 
-def spiral_path_diagonal(
-    start: float = 50.0,
-    end: float = 200.0,
-    n_points: int = 1200,
-    turns: float = 3.5,
-    r_max: float = 90.0,
+def helix_roundtrip_diagonal(
+    start: float = 230.0,
+    end: float = 25.0,
+    n_points: int = 3200,
+    turns_each: float = 12.0,
+    r_max: float = 135.0,
+    safety: float = 0.98,
 ):
+    if start < end:
+        raise ValueError("start should be >= end (e.g. 220 down to 35).")
 
-    t = np.linspace(0.0, 1.0, n_points)
+    # s: 0..2 (down then back)
+    s = np.linspace(0.0, 2.0, n_points)
 
-    # Travel along the diagonal from start -> end
-    v = start + (end - start) * t
+    # Center along diagonal, smooth turnaround at the low end
+    mid = (start + end) / 2.0
+    delta = (start - end) / 2.0
+    v = mid + delta * np.cos(np.pi * s)  # start->end->start
     base = np.stack([v, v, v], axis=1)
 
-    # Radius profile: 0 at ends, max at middle
-    radius = r_max * np.sin(np.pi * t)
+    # Radius profile: 0 at s=0,1,2; max at s=0.5 and 1.5
+    radius = r_max * (np.sin(np.pi * s) ** 2)
 
-    # Spiral angle
-    theta = 2.0 * np.pi * turns * t
-
-    # Orthonormal basis perpendicular to axis (1,1,1)
+    # Orthonormal basis perpendicular to (1,1,1)
     axis = np.array([1.0, 1.0, 1.0])
     axis = axis / np.linalg.norm(axis)
 
@@ -32,13 +35,24 @@ def spiral_path_diagonal(
     u = u / np.linalg.norm(u)
     w = np.cross(axis, u)
 
+    # For any coordinate i, the sinusoid amplitude is radius * sqrt(u_i^2 + w_i^2)
+    amp = float(
+        np.sqrt(u[0] ** 2 + w[0] ** 2)
+    )  # same for x,y,z in this basis (~0.8165)
+
+    # Cap radius so ALL points stay within [end, start] on each axis (with a little margin).
+    # This keeps the spiral from going "darker than 35" or "brighter than 220" in any channel.
+    dist_to_nearest_endpoint = np.minimum(v - end, start - v)  # >= 0
+    r_allowed = (dist_to_nearest_endpoint / amp) * safety
+    radius = np.minimum(radius, r_allowed)
+
+    # Angle: 12 turns down (s:0->1), 12 turns back (s:1->2), continuous direction
+    theta = 2.0 * np.pi * turns_each * s
+
     offsets = (radius * np.cos(theta))[:, None] * u + (radius * np.sin(theta))[
         :, None
     ] * w
     pts = base + offsets
-
-    # Keep it inside RGB cube
-    pts = np.clip(pts, 0.0, 255.0)
 
     return pts[:, 0], pts[:, 1], pts[:, 2]
 
@@ -53,11 +67,6 @@ def find_repo_root(start: Path) -> Path:
 
 
 def parse_colors_from_ts(ts_text: str):
-    """
-    Parses lines like:
-      "Classic Black": [0, 0, 0],
-    Returns list of (name, r, g, b)
-    """
     pattern = re.compile(
         r'"([^"]+)"\s*:\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]\s*,?'
     )
@@ -126,15 +135,16 @@ def main():
     ax.set_zlim(0, 255)
 
     # Draw scatter
-    sc = ax.scatter(R, G, B, c=point_colors, s=30, depthshade=True)
-    # sx, sy, sz = spiral_path_diagonal(
-    #     start=50.0,
-    #     end=200.0,
-    #     n_points=1600,
-    #     turns=4,
-    #     r_max=98.0,
-    # )
-    # ax.plot(sx, sy, sz, linewidth=4, color="black", alpha=0.98)
+    ax.scatter(R, G, B, c=point_colors, s=30, depthshade=True)
+    sx, sy, sz = helix_roundtrip_diagonal(
+        start=220.0,
+        end=35.0,
+        n_points=4000,
+        turns_each=12,
+        r_max=140.0,  # try bigger/smaller; it will auto-cap to stay within [35..220]
+    )
+
+    ax.plot(sx, sy, sz, linewidth=4, color="black", alpha=0.98)
 
     # Optional: annotate a handful (too many labels becomes unreadable)
     # Here: label the 10 brightest colors
