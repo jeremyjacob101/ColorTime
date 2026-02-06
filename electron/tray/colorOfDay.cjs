@@ -1,12 +1,21 @@
-const ANCHORS = [
-  { m: 0, c: { r: 128, g: 0, b: 128 } },
-  { m: 240, c: { r: 255, g: 0, b: 0 } },
-  { m: 480, c: { r: 255, g: 165, b: 0 } },
-  { m: 720, c: { r: 255, g: 255, b: 0 } },
-  { m: 960, c: { r: 0, g: 128, b: 0 } },
-  { m: 1200, c: { r: 0, g: 0, b: 255 } },
-  { m: 1440, c: { r: 128, g: 0, b: 128 } },
-];
+// electron/tray/colorOfDay.cjs
+
+const TWO_PI = Math.PI * 2;
+
+// Basis vectors perpendicular to the diagonal axis (1,1,1).
+// These match the Python construction you used (a=[1,0,0], u normalized, w = axis x u).
+const U = { x: 0.816496580927726, y: -0.408248290463863, z: -0.408248290463863 };
+const W = { x: 0.0, y: 0.707106781186548, z: -0.707106781186548 };
+
+// Amplitude factor used for radius capping (same as sqrt(u_x^2 + w_x^2)).
+const AMP = 0.816496580927726;
+
+const DEFAULT_RANGE = { min: 25, max: 230 };
+
+// Helix shape tuning (matches your working Python defaults closely).
+const TURNS_EACH = 12.0;
+const R_MAX = 135.0;
+const SAFETY = 0.98;
 
 function clampInt(v, lo, hi) {
   v = Math.round(Number(v));
@@ -16,41 +25,68 @@ function clampInt(v, lo, hi) {
 
 function normalizeRange(range) {
   const r = range || {};
-  let min = clampInt(r.min ?? 0, 0, 255);
-  let max = clampInt(r.max ?? 255, 0, 255);
+  let min = clampInt(r.min ?? DEFAULT_RANGE.min, 0, 255);
+  let max = clampInt(r.max ?? DEFAULT_RANGE.max, 0, 255);
 
   if (min > max) [min, max] = [max, min];
-  if (min === max) max = Math.min(255, min + 1); // ensure non-zero span
-
   return { min, max };
 }
 
-function remap(rgb, range) {
-  const { min, max } = normalizeRange(range);
-  const span = max - min;
-  const map = (v) => Math.round(min + (v / 255) * span);
+function helixColorAtS(s, start, end) {
+  // Center along diagonal (start -> end -> start) using cosine
+  const mid = (start + end) / 2.0;
+  const delta = (start - end) / 2.0;
+  const v = mid + delta * Math.cos(Math.PI * s);
 
-  return { r: map(rgb.r), g: map(rgb.g), b: map(rgb.b) };
+  // Radius profile: 0 at s=0,1,2; max at s=0.5 and 1.5
+  let radius = R_MAX * Math.pow(Math.sin(Math.PI * s), 2);
+
+  // Cap radius so all channels stay inside [end, start] (with margin)
+  const distToNearest = Math.min(v - end, start - v); // >= 0 in ideal math
+  const rAllowed = (distToNearest / AMP) * SAFETY;
+  if (Number.isFinite(rAllowed)) radius = Math.min(radius, Math.max(0, rAllowed));
+
+  // Spiral angle: 12 turns per leg (0..1 and 1..2), continuous direction
+  const theta = TWO_PI * TURNS_EACH * s;
+  const c = Math.cos(theta);
+  const sn = Math.sin(theta);
+
+  const r = v + radius * (c * U.x + sn * W.x);
+  const g = v + radius * (c * U.y + sn * W.y);
+  const b = v + radius * (c * U.z + sn * W.z);
+
+  return {
+    r: clampInt(r, 0, 255),
+    g: clampInt(g, 0, 255),
+    b: clampInt(b, 0, 255),
+  };
 }
 
 function currentColor(range) {
-  const d = new Date();
-  const mm = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+  const { min, max } = normalizeRange(range);
+  const start = max; // noon
+  const end = min;   // midnight
 
-  for (let i = 0; i < ANCHORS.length - 1; i++) {
-    const a = ANCHORS[i];
-    const b = ANCHORS[i + 1];
-    if (mm >= a.m && mm <= b.m) {
-      const t = (mm - a.m) / (b.m - a.m);
-      const raw = {
-        r: Math.round(a.c.r + (b.c.r - a.c.r) * t),
-        g: Math.round(a.c.g + (b.c.g - a.c.g) * t),
-        b: Math.round(a.c.b + (b.c.b - a.c.b) * t),
-      };
-      return remap(raw, range);
-    }
+  const d = new Date();
+  const mm =
+    d.getHours() * 60 +
+    d.getMinutes() +
+    d.getSeconds() / 60 +
+    d.getMilliseconds() / 60000;
+
+  // Map clock time to s in [0..2] such that:
+  // - noon (720) => s = 0  (start)
+  // - midnight (0 / 1440) => s = 1 (end)
+  // - midnight -> noon => s: 1..2 (return leg)
+  // - noon -> midnight => s: 0..1 (down leg)
+  let s;
+  if (mm < 720) {
+    s = 1 + mm / 720; // 1..2  (midnight -> noon)
+  } else {
+    s = (mm - 720) / 720; // 0..1 (noon -> midnight)
   }
-  return remap(ANCHORS[0].c, range);
+
+  return helixColorAtS(s, start, end);
 }
 
-module.exports = { currentColor };
+module.exports = { currentColor, normalizeRange };

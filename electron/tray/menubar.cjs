@@ -1,3 +1,5 @@
+// electron/tray/menubar.cjs
+
 const { app, Tray, Menu, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -5,7 +7,7 @@ const fs = require("fs");
 const { createJiti } = require("jiti");
 const jiti = createJiti(__filename);
 
-const { currentColor } = require("./colorOfDay.cjs");
+const { currentColor, normalizeRange } = require("./colorOfDay.cjs");
 const { coloredCircleImage, coloredBarImage } = require("./trayIcon.cjs");
 
 let tray = null;
@@ -13,7 +15,7 @@ let win = null;
 let lastPayload = null;
 
 async function createMenubarApp() {
-  let range = { min: 50, max: 200 };
+  let range = normalizeRange({ min: 25, max: 230 });
 
   const broadcastRange = () => {
     if (win && !win.isDestroyed()) win.webContents.send("colur:range", range);
@@ -40,39 +42,26 @@ async function createMenubarApp() {
   Menu.setApplicationMenu(null);
   const colorsPath = path.join(app.getAppPath(), "src/colors/ColorList.ts");
 
+  let ColorsToRGB = {};
   if (!fs.existsSync(colorsPath)) {
-    var ColorsToRGB = {};
+    ColorsToRGB = {};
   } else {
     try {
       const imported = await jiti.import(colorsPath);
-      var ColorsToRGB = imported.ColorsToRGB || {};
+      ColorsToRGB = imported.ColorsToRGB || {};
     } catch (e) {
-      var ColorsToRGB = {};
+      ColorsToRGB = {};
     }
   }
 
   const rangePath = path.join(app.getPath("userData"), "range.json");
-
-  const clampInt = (v, lo, hi) => {
-    v = Math.round(Number(v));
-    if (!Number.isFinite(v)) return lo;
-    return Math.min(hi, Math.max(lo, v));
-  };
-
-  const normalizeRange = (r) => {
-    let min = clampInt(r?.min ?? 50, 0, 255);
-    let max = clampInt(r?.max ?? 200, 0, 255);
-    if (min > max) [min, max] = [max, min];
-    if (min === max) max = Math.min(255, min + 1);
-    return { min, max };
-  };
 
   const loadRange = () => {
     try {
       const raw = fs.readFileSync(rangePath, "utf8");
       return normalizeRange(JSON.parse(raw));
     } catch {
-      return normalizeRange({ min: 50, max: 200 });
+      return normalizeRange({ min: 25, max: 230 });
     }
   };
 
@@ -203,6 +192,7 @@ async function createMenubarApp() {
     };
     tick();
   }
+
   createWindow();
 
   ipcMain.handle("colur:getColor", () => {
