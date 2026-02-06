@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { ColorsToRGB } from "./colors/ColorList";
-import "./MainScreen.css";
+import { ColorsToRGB } from "../colors/ColorList";
+import "../css/MainScreen.css";
 
 type RGB = { r: number; g: number; b: number };
 type ColorPayload = { rgb: RGB; ts: number };
@@ -14,7 +14,7 @@ const getLuminance = (bg: RGB) =>
 
 export default function MainScreen() {
   const [payload, setPayload] = useState<ColorPayload | null>(null);
-  const [range, setRange] = useState<Range>({ min: 50, max: 200 });
+  const [range, setRange] = useState<Range>({ min: 30, max: 225 });
 
   useEffect(() => {
     window.colurTime?.getColor?.().then(setPayload);

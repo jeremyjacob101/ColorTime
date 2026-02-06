@@ -1,0 +1,73 @@
+.mycolors-screen {
+  height: 100vh;
+  background: #0b0b0c;
+  color: rgba(255, 255, 255, 0.92);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mycolors-header {
+  padding: 14px 14px 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mycolors-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.mycolors-count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.mycolors-list {
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.mycolors-empty {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.mycolors-pill {
+  border-radius: 999px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.mycolors-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+}
+
+.mycolors-rgb {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+  white-space: nowrap;
+}

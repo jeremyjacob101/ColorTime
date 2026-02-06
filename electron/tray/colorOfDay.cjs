@@ -8,7 +8,7 @@ const W = { x: 0.0, y: 0.707106781186548, z: -0.707106781186548 };
 // Amplitude factor used for radius capping (same as sqrt(u_x^2 + w_x^2)).
 const AMP = 0.816496580927726;
 
-const DEFAULT_RANGE = { min: 25, max: 230 };
+const DEFAULT_RANGE = { min: 30, max: 225 };
 
 // Helix shape tuning (matches your working Python defaults closely).
 const TURNS_EACH = 12.0;

@@ -7,8 +7,8 @@ import re
 
 
 def helix_roundtrip_diagonal(
-    start: float = 230.0,
-    end: float = 25.0,
+    start: float = 225.0,
+    end: float = 30.0,
     n_points: int = 3200,
     turns_each: float = 12.0,
     r_max: float = 135.0,
@@ -59,8 +59,8 @@ def helix_roundtrip_diagonal(
 
 def helix_point_at_s(
     s: float,
-    start: float = 230.0,
-    end: float = 25.0,
+    start: float = 225.0,
+    end: float = 30.0,
     turns_each: float = 12.0,
     r_max: float = 135.0,
     safety: float = 0.98,

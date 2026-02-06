@@ -1,4 +1,3 @@
-// electron/tray/menubar.cjs
 const { app, Tray, Menu, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -16,7 +15,9 @@ let myColorsWin = null;
 let lastPayload = null;
 
 async function createMenubarApp() {
-  let range = normalizeRange({ min: 25, max: 230 });
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+
+  let range = normalizeRange({ min: 30, max: 225 });
 
   const broadcastRange = () => {
     if (win && !win.isDestroyed()) win.webContents.send("colur:range", range);
@@ -62,7 +63,7 @@ async function createMenubarApp() {
       const raw = fs.readFileSync(rangePath, "utf8");
       return normalizeRange(JSON.parse(raw));
     } catch {
-      return normalizeRange({ min: 25, max: 230 });
+      return normalizeRange({ min: 30, max: 225 });
     }
   };
 
@@ -175,7 +176,10 @@ async function createMenubarApp() {
   function ensureMyColorsWindow() {
     if (myColorsWin && !myColorsWin.isDestroyed()) return myColorsWin;
 
-    myColorsWin = createMyColorsWindow(app.getAppPath());
+    myColorsWin = createMyColorsWindow({
+      appPath: app.getAppPath(),
+      devServerUrl,
+    });
 
     myColorsWin.webContents.on("did-finish-load", () => {
       broadcastMyColors();
@@ -268,6 +272,7 @@ async function createMenubarApp() {
         label: "My Colors",
         click: toggleMyColorsWindow,
       },
+      { type: "separator" },
       {
         label: "Quit ColurTime",
         click: () => app.quit(),
@@ -293,9 +298,8 @@ async function createMenubarApp() {
       },
     });
 
-    const devServer = process.env.VITE_DEV_SERVER_URL;
-    if (devServer) {
-      win.loadURL(devServer);
+    if (devServerUrl) {
+      win.loadURL(devServerUrl);
     } else {
       win.loadFile(path.join(app.getAppPath(), "dist/index.html"));
     }
