@@ -1,5 +1,3 @@
-// electron/tray/colorOfDay.cjs
-
 const TWO_PI = Math.PI * 2;
 
 // Basis vectors perpendicular to the diagonal axis (1,1,1).

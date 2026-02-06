@@ -21,4 +21,12 @@ contextBridge.exposeInMainWorld("colurTime", {
     ipcRenderer.on("colur:focusRange", handler);
     return () => ipcRenderer.removeListener("colur:focusRange", handler);
   },
+
+  getMyColors: () => ipcRenderer.invoke("colur:getMyColors"),
+  addMyColor: (name) => ipcRenderer.invoke("colur:addMyColor", name),
+  onMyColors: (cb) => {
+    const handler = (_e, items) => cb(items);
+    ipcRenderer.on("colur:myColors", handler);
+    return () => ipcRenderer.removeListener("colur:myColors", handler);
+  },
 });
