@@ -1,6 +1,6 @@
 {
   "name": "colurtime",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "private": true,
   "type": "module",
   "description": "A simple desktop app that shows the time as a color.",
@@ -12,10 +12,11 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "dist": "npm version patch --no-git-tag-version && npm run build && electron-builder --mac dmg",
-    "dist:dir": "npm run build && electron-builder --mac dir"
+    "dist:dir": "npm run build && electron-builder --mac dir",
+    "dist:mas": "npm version patch --no-git-tag-version && npm run build && electron-builder --mac mas"
   },
   "build": {
-    "appId": "local.colurtime.jj",
+    "appId": "com.jj.colurtime",
     "productName": "ColurTime",
     "directories": {
       "buildResources": "electron/build",
@@ -38,7 +39,15 @@
       "notarize": false,
       "hardenedRuntime": false,
       "entitlements": "electron/build/entitlements.mac.plist",
-      "entitlementsInherit": "electron/build/entitlements.mac.plist"
+      "entitlementsInherit": "electron/build/entitlements.mac.inherit.plist"
+    },
+    "mas": {
+      "category": "public.app-category.utilities",
+      "icon": "electron/build/icons/icon.icns",
+      "target": "mas",
+      "type": "distribution",
+      "entitlements": "electron/build/entitlements.mas.plist",
+      "entitlementsInherit": "electron/build/entitlements.mas.inherit.plist"
     },
     "win": {
       "icon": "electron/build/icons/icon.ico"
