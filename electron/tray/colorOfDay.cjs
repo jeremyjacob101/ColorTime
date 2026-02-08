@@ -1,8 +1,11 @@
 const TWO_PI = Math.PI * 2;
 
 // Basis vectors perpendicular to the diagonal axis (1,1,1).
-// These match the Python construction you used (a=[1,0,0], u normalized, w = axis x u).
-const U = { x: 0.816496580927726, y: -0.408248290463863, z: -0.408248290463863 };
+const U = {
+  x: 0.816496580927726,
+  y: -0.408248290463863,
+  z: -0.408248290463863,
+};
 const W = { x: 0.0, y: 0.707106781186548, z: -0.707106781186548 };
 
 // Amplitude factor used for radius capping (same as sqrt(u_x^2 + w_x^2)).
@@ -10,7 +13,7 @@ const AMP = 0.816496580927726;
 
 const DEFAULT_RANGE = { min: 30, max: 225 };
 
-// Helix shape tuning (matches your working Python defaults closely).
+// Helix shape tuning
 const TURNS_EACH = 12.0;
 const R_MAX = 135.0;
 const SAFETY = 0.98;
@@ -30,21 +33,28 @@ function normalizeRange(range) {
   return { min, max };
 }
 
+// Constant-speed centerline: start -> end (s:0..1), then end -> start (s:1..2)
+function centerVAtS(s, start, end) {
+  if (s <= 1.0) {
+    return start + (end - start) * s;
+  }
+  return end + (start - end) * (s - 1.0);
+}
+
 function helixColorAtS(s, start, end) {
-  // Center along diagonal (start -> end -> start) using cosine
-  const mid = (start + end) / 2.0;
-  const delta = (start - end) / 2.0;
-  const v = mid + delta * Math.cos(Math.PI * s);
+  // Center along diagonal with constant speed (no eased slowdown at the ends)
+  const v = centerVAtS(s, start, end);
 
   // Radius profile: 0 at s=0,1,2; max at s=0.5 and 1.5
   let radius = R_MAX * Math.pow(Math.sin(Math.PI * s), 2);
 
   // Cap radius so all channels stay inside [end, start] (with margin)
-  const distToNearest = Math.min(v - end, start - v); // >= 0 in ideal math
+  const distToNearest = Math.min(v - end, start - v); // should be >= 0
   const rAllowed = (distToNearest / AMP) * SAFETY;
-  if (Number.isFinite(rAllowed)) radius = Math.min(radius, Math.max(0, rAllowed));
+  if (Number.isFinite(rAllowed))
+    radius = Math.min(radius, Math.max(0, rAllowed));
 
-  // Spiral angle: 12 turns per leg (0..1 and 1..2), continuous direction
+  // Spiral angle: 12 turns per leg (0..1 and 1..2)
   const theta = TWO_PI * TURNS_EACH * s;
   const c = Math.cos(theta);
   const sn = Math.sin(theta);
@@ -63,7 +73,7 @@ function helixColorAtS(s, start, end) {
 function currentColor(range) {
   const { min, max } = normalizeRange(range);
   const start = max; // noon
-  const end = min;   // midnight
+  const end = min; // midnight
 
   const d = new Date();
   const mm =

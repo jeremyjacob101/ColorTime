@@ -20,10 +20,12 @@ def helix_roundtrip_diagonal(
     # s: 0..2 (down then back)
     s = np.linspace(0.0, 2.0, n_points)
 
-    # Center along diagonal, smooth turnaround at the low end
-    mid = (start + end) / 2.0
-    delta = (start - end) / 2.0
-    v = mid + delta * np.cos(np.pi * s)  # start->end->start
+    # Center along diagonal, constant-speed down then back
+    v = np.where(
+        s <= 1.0,
+        start + (end - start) * s,
+        end + (start - end) * (s - 1.0),
+    )
     base = np.stack([v, v, v], axis=1)
 
     # Radius profile: 0 at s=0,1,2; max at s=0.5 and 1.5
@@ -72,9 +74,12 @@ def helix_point_at_s(
         raise ValueError("start should be >= end.")
     s = float(s)
 
-    mid = (start + end) / 2.0
-    delta = (start - end) / 2.0
-    v = mid + delta * np.cos(np.pi * s)
+    # start -> end (s:0..1), then end -> start (s:1..2), constant speed
+    if s <= 1.0:
+        v = start + (end - start) * s
+    else:
+        v = end + (start - end) * (s - 1.0)
+
 
     radius = r_max * (np.sin(np.pi * s) ** 2)
 
