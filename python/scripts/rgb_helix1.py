@@ -80,7 +80,6 @@ def helix_point_at_s(
     else:
         v = end + (start - end) * (s - 1.0)
 
-
     radius = r_max * (np.sin(np.pi * s) ** 2)
 
     axis = np.array([1.0, 1.0, 1.0])
