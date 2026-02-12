@@ -1,6 +1,6 @@
 const noopUnsub = () => {};
 
-export const colur = {
+export const colorTime = {
   getColor: async (): Promise<ColorPayload | null> => {
     const p = await window.colorTime?.getColor?.();
     return p ?? null;

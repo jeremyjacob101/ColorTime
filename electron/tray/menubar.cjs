@@ -20,7 +20,7 @@ async function createMenubarApp() {
   let range = normalizeRange({ min: 30, max: 225 });
 
   const broadcastRange = () => {
-    if (win && !win.isDestroyed()) win.webContents.send("colur:range", range);
+    if (win && !win.isDestroyed()) win.webContents.send("colorTime:range", range);
   };
 
   const refreshNow = () => {
@@ -29,7 +29,7 @@ async function createMenubarApp() {
 
     if (tray) tray.setImage(coloredCircleImage(rgb));
     if (win && !win.isDestroyed())
-      win.webContents.send("colur:color", lastPayload);
+      win.webContents.send("colorTime:color", lastPayload);
 
     updateTrayMenu(win?.isVisible?.() ?? false);
   };
@@ -125,9 +125,9 @@ async function createMenubarApp() {
   function broadcastMyColors() {
     const payload = buildMyColorsPayload();
     if (win && !win.isDestroyed())
-      win.webContents.send("colur:myColors", payload);
+      win.webContents.send("colorTime:myColors", payload);
     if (myColorsWin && !myColorsWin.isDestroyed())
-      myColorsWin.webContents.send("colur:myColors", payload);
+      myColorsWin.webContents.send("colorTime:myColors", payload);
   }
 
   function addMyColorByName(name) {
@@ -326,7 +326,7 @@ async function createMenubarApp() {
 
       if (tray) tray.setImage(coloredCircleImage(rgb));
       if (win && !win.isDestroyed())
-        win.webContents.send("colur:color", lastPayload);
+        win.webContents.send("colorTime:color", lastPayload);
 
       setTimeout(tick, 1000 - (Date.now() % 1000));
     };
@@ -336,22 +336,22 @@ async function createMenubarApp() {
   createWindow();
 
   // ---- IPC ----
-  ipcMain.handle("colur:getColor", () => {
+  ipcMain.handle("colorTime:getColor", () => {
     return lastPayload || { rgb: currentColor(range), ts: Date.now() };
   });
 
-  ipcMain.handle("colur:getRange", () => range);
+  ipcMain.handle("colorTime:getRange", () => range);
 
-  ipcMain.handle("colur:setRange", (_evt, next) => {
+  ipcMain.handle("colorTime:setRange", (_evt, next) => {
     setRange(next);
     return range;
   });
 
-  ipcMain.handle("colur:getMyColors", () => {
+  ipcMain.handle("colorTime:getMyColors", () => {
     return buildMyColorsPayload();
   });
 
-  ipcMain.handle("colur:addMyColor", (_evt, name) => {
+  ipcMain.handle("colorTime:addMyColor", (_evt, name) => {
     addMyColorByName(name);
     return buildMyColorsPayload();
   });
