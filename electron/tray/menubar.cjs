@@ -274,7 +274,7 @@ async function createMenubarApp() {
       },
       { type: "separator" },
       {
-        label: "Quit ColurTime",
+        label: "Quit ColorTime",
         click: () => app.quit(),
       },
     ]);
@@ -359,7 +359,7 @@ async function createMenubarApp() {
   // ---- Tray ----
   const initialColor = currentColor(range);
   tray = new Tray(coloredCircleImage(initialColor));
-  tray.setToolTip("ColurTime");
+  tray.setToolTip("ColorTime");
   tray.on("mouse-enter", () => updateTrayMenu(win?.isVisible?.() ?? false));
   updateTrayMenu(false);
 

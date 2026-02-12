@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("colurTime", {
+contextBridge.exposeInMainWorld("colorTime", {
   getColor: () => ipcRenderer.invoke("colur:getColor"),
   onColor: (cb) => {
     const handler = (_e, payload) => cb(payload);

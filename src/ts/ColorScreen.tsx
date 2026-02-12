@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ColorsToRGB } from "../colors/ColorList";
 import "../css/ColorScreen.css";
-import { colur } from "../config/types/colurTime";
+import { colur } from "../config/types/colorTime";
 
 const toHex = ({ r, g, b }: RGB) =>
   `#${[r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
@@ -11,7 +11,7 @@ const getLuminance = (bg: RGB) =>
 
 export default function ColorScreen() {
   const [payload, setPayload] = useState<ColorPayload | null>(null);
-  const [range, setRange] = useState<ColurRange>({ min: 25, max: 230 });
+  const [range, setRange] = useState<ColorRange>({ min: 25, max: 230 });
 
   useEffect(() => {
     colur.getColor().then(setPayload);
@@ -41,7 +41,7 @@ export default function ColorScreen() {
   const textColor =
     getLuminance(rgb) > 0.65 ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.9)";
 
-  const applyRange = (next: ColurRange) => {
+  const applyRange = (next: ColorRange) => {
     setRange(next);
     colur.setRange(next);
   };

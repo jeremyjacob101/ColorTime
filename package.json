@@ -1,5 +1,5 @@
 {
-  "name": "colurtime",
+  "name": "colortime",
   "version": "0.0.15",
   "private": true,
   "type": "module",
@@ -16,8 +16,8 @@
     "dist:mas": "npm version patch --no-git-tag-version && npm run build && electron-builder --mac mas"
   },
   "build": {
-    "appId": "com.jj.colurtime",
-    "productName": "ColurTime",
+    "appId": "com.jj.colortime",
+    "productName": "ColorTime",
     "directories": {
       "buildResources": "electron/build",
       "output": "release"

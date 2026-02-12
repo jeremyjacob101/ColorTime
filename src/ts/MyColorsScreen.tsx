@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "../css/MyColorsScreen.css";
-import { colur } from "../config/types/colurTime";
+import { colur } from "../config/types/colorTime";
 
 const clamp = (n: number, lo: number, hi: number) =>
   Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo;

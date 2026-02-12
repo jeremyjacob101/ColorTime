@@ -4,17 +4,17 @@ export {};
 declare global {
   type RGB = { r: number; g: number; b: number };
   type ColorPayload = { rgb: RGB; ts: number };
-  type ColurRange = { min: number; max: number };
+  type ColorRange = { min: number; max: number };
   type MyColor = { name: string; rgb: RGB };
 
   interface Window {
-    colurTime?: {
+    colorTime?: {
       getColor?: () => Promise<ColorPayload>;
       onColor?: (cb: (p: ColorPayload) => void) => () => void;
 
-      getRange?: () => Promise<ColurRange>;
-      setRange?: (range: ColurRange) => Promise<ColurRange>;
-      onRange?: (cb: (r: ColurRange) => void) => () => void;
+      getRange?: () => Promise<ColorRange>;
+      setRange?: (range: ColorRange) => Promise<ColorRange>;
+      onRange?: (cb: (r: ColorRange) => void) => () => void;
 
       onFocusRange?: (cb: () => void) => () => void;
 
