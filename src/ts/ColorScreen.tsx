@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ColorsToRGB } from "../colors/ColorList";
 import "../css/ColorScreen.css";
-import { colur } from "../config/types/colorTime";
+import { colorTime } from "../config/types/colorTime";
 
 const toHex = ({ r, g, b }: RGB) =>
   `#${[r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
@@ -14,11 +14,11 @@ export default function ColorScreen() {
   const [range, setRange] = useState<ColorRange>({ min: 25, max: 230 });
 
   useEffect(() => {
-    colur.getColor().then(setPayload);
-    const unsubColor = colur.onColor(setPayload);
+    colorTime.getColor().then(setPayload);
+    const unsubColor = colorTime.onColor(setPayload);
 
-    colur.getRange().then((r) => r && setRange(r));
-    const unsubRange = colur.onRange((r) => r && setRange(r));
+    colorTime.getRange().then((r) => r && setRange(r));
+    const unsubRange = colorTime.onRange((r) => r && setRange(r));
 
     return () => {
       unsubColor();
@@ -43,7 +43,7 @@ export default function ColorScreen() {
 
   const applyRange = (next: ColorRange) => {
     setRange(next);
-    colur.setRange(next);
+    colorTime.setRange(next);
   };
 
   const onMinChange = (v: number) => {

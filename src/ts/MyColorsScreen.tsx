@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "../css/MyColorsScreen.css";
-import { colur } from "../config/types/colorTime";
+import { colorTime } from "../config/types/colorTime";
 
 const clamp = (n: number, lo: number, hi: number) =>
   Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo;
@@ -12,11 +12,11 @@ export default function MyColorsScreen() {
   const [items, setItems] = useState<MyColor[]>([]);
 
   useEffect(() => {
-    const unsub = colur.onMyColors((next: MyColor[]) => {
+    const unsub = colorTime.onMyColors((next: MyColor[]) => {
       setItems(Array.isArray(next) ? next : []);
     });
 
-    colur.getMyColors().then(setItems);
+    colorTime.getMyColors().then(setItems);
 
     return () => {
       unsub();

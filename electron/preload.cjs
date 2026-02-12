@@ -1,32 +1,32 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("colorTime", {
-  getColor: () => ipcRenderer.invoke("colur:getColor"),
+  getColor: () => ipcRenderer.invoke("colorTime:getColor"),
   onColor: (cb) => {
     const handler = (_e, payload) => cb(payload);
-    ipcRenderer.on("colur:color", handler);
-    return () => ipcRenderer.removeListener("colur:color", handler);
+    ipcRenderer.on("colorTime:color", handler);
+    return () => ipcRenderer.removeListener("colorTime:color", handler);
   },
 
-  getRange: () => ipcRenderer.invoke("colur:getRange"),
-  setRange: (range) => ipcRenderer.invoke("colur:setRange", range),
+  getRange: () => ipcRenderer.invoke("colorTime:getRange"),
+  setRange: (range) => ipcRenderer.invoke("colorTime:setRange", range),
   onRange: (cb) => {
     const handler = (_e, r) => cb(r);
-    ipcRenderer.on("colur:range", handler);
-    return () => ipcRenderer.removeListener("colur:range", handler);
+    ipcRenderer.on("colorTime:range", handler);
+    return () => ipcRenderer.removeListener("colorTime:range", handler);
   },
 
   onFocusRange: (cb) => {
     const handler = () => cb();
-    ipcRenderer.on("colur:focusRange", handler);
-    return () => ipcRenderer.removeListener("colur:focusRange", handler);
+    ipcRenderer.on("colorTime:focusRange", handler);
+    return () => ipcRenderer.removeListener("colorTime:focusRange", handler);
   },
 
-  getMyColors: () => ipcRenderer.invoke("colur:getMyColors"),
-  addMyColor: (name) => ipcRenderer.invoke("colur:addMyColor", name),
+  getMyColors: () => ipcRenderer.invoke("colorTime:getMyColors"),
+  addMyColor: (name) => ipcRenderer.invoke("colorTime:addMyColor", name),
   onMyColors: (cb) => {
     const handler = (_e, items) => cb(items);
-    ipcRenderer.on("colur:myColors", handler);
-    return () => ipcRenderer.removeListener("colur:myColors", handler);
+    ipcRenderer.on("colorTime:myColors", handler);
+    return () => ipcRenderer.removeListener("colorTime:myColors", handler);
   },
 });
