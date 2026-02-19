@@ -1,4 +1,6 @@
-html, body, #root {
+html,
+body,
+#root {
   width: 100%;
   height: 100%;
   margin: 0;
@@ -7,4 +9,9 @@ html, body, #root {
 
 body {
   overflow: hidden;
+}
+
+:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
 }
