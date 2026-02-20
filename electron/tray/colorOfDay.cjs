@@ -1,95 +1,133 @@
 const TWO_PI = Math.PI * 2;
+const EPS = 1e-12;
 
-// Basis vectors perpendicular to the diagonal axis (1,1,1).
-const U = {
-  x: 0.816496580927726,
-  y: -0.408248290463863,
-  z: -0.408248290463863,
-};
-const W = { x: 0.0, y: 0.707106781186548, z: -0.707106781186548 };
+const DEFAULT_RANGE = { min: 45, max: 210 };
+const CUBE_MIN = 0.0;
+const CUBE_MAX = 255.0;
 
-// Amplitude factor used for radius capping (same as sqrt(u_x^2 + w_x^2)).
-const AMP = 0.816496580927726;
-
-const DEFAULT_RANGE = { min: 30, max: 225 };
-
-// Helix shape tuning
+// Fixed helix parameters from python/scripts/rgb_helix1.py (main()).
+const HELIX_START = 210.0;
+const HELIX_END = 45.0;
 const TURNS_EACH = 12.0;
-const R_MAX = 135.0;
+const R_MAX = 140.0;
 const SAFETY = 0.98;
+const THETA0 = Math.PI / 2;
+const RADIUS_POWER = 0.5;
 
-function clampInt(v, lo, hi) {
-  v = Math.round(Number(v));
+function clamp(v, lo, hi) {
   if (!Number.isFinite(v)) return lo;
   return Math.min(hi, Math.max(lo, v));
 }
 
-function normalizeRange(range) {
-  const r = range || {};
-  let min = clampInt(r.min ?? DEFAULT_RANGE.min, 0, 255);
-  let max = clampInt(r.max ?? DEFAULT_RANGE.max, 0, 255);
-
-  if (min > max) [min, max] = [max, min];
-  return { min, max };
+function clampInt(v, lo, hi) {
+  return Math.round(clamp(Number(v), lo, hi));
 }
 
-// Constant-speed centerline: start -> end (s:0..1), then end -> start (s:1..2)
-function centerVAtS(s, start, end) {
-  if (s <= 1.0) {
-    return start + (end - start) * s;
-  }
-  return end + (start - end) * (s - 1.0);
+function dot(a, b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-function helixColorAtS(s, start, end) {
-  // Center along diagonal with constant speed (no eased slowdown at the ends)
-  const v = centerVAtS(s, start, end);
-
-  // Radius profile: 0 at s=0,1,2; max at s=0.5 and 1.5
-  let radius = R_MAX * Math.pow(Math.sin(Math.PI * s), 2);
-
-  // Cap radius so all channels stay inside [end, start] (with margin)
-  const distToNearest = Math.min(v - end, start - v); // should be >= 0
-  const rAllowed = (distToNearest / AMP) * SAFETY;
-  if (Number.isFinite(rAllowed))
-    radius = Math.min(radius, Math.max(0, rAllowed));
-
-  // Spiral angle: 12 turns per leg (0..1 and 1..2)
-  const theta = TWO_PI * TURNS_EACH * s;
-  const c = Math.cos(theta);
-  const sn = Math.sin(theta);
-
-  const r = v + radius * (c * U.x + sn * W.x);
-  const g = v + radius * (c * U.y + sn * W.y);
-  const b = v + radius * (c * U.z + sn * W.z);
-
-  return {
-    r: clampInt(r, 0, 255),
-    g: clampInt(g, 0, 255),
-    b: clampInt(b, 0, 255),
-  };
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
 }
 
-function currentColor(range) {
-  const { min, max } = normalizeRange(range);
-  const start = max; // noon
-  const end = min; // midnight
+function norm(a) {
+  return Math.hypot(a[0], a[1], a[2]);
+}
 
+function normalizeVec(a) {
+  const n = norm(a);
+  if (n <= 0) return [0, 0, 0];
+  return [a[0] / n, a[1] / n, a[2] / n];
+}
+
+function buildBasis() {
+  const axis = normalizeVec([1.0, 1.0, 1.0]);
+  const a = [1.0, 0.0, 0.0];
+  const proj = dot(a, axis);
+  const u = normalizeVec([
+    a[0] - proj * axis[0],
+    a[1] - proj * axis[1],
+    a[2] - proj * axis[2],
+  ]);
+  const w = cross(axis, u);
+  return { u, w };
+}
+
+const BASIS = buildBasis();
+
+function minutesToS(mm) {
+  const m = Number(mm);
+  if (m <= 720.0) return 1.0 + m / 720.0;
+  return (m - 720.0) / 720.0;
+}
+
+function helixPointAtS(
+  s,
+  {
+    start = HELIX_START,
+    end = HELIX_END,
+    turns_each = TURNS_EACH,
+    r_max = R_MAX,
+    safety = SAFETY,
+    theta0 = THETA0,
+    radius_power = RADIUS_POWER,
+    cube_min = CUBE_MIN,
+    cube_max = CUBE_MAX,
+  } = {},
+) {
+  if (start < end) throw new Error("start should be >= end.");
+  const ss = Number(s);
+
+  const v =
+    ss <= 1.0 ? start + (end - start) * ss : end + (start - end) * (ss - 1.0);
+
+  const t = Math.pow(Math.sin(Math.PI * ss), 2);
+  let radius = r_max * Math.pow(t, radius_power);
+
+  const theta = TWO_PI * turns_each * ss + theta0;
+  const d = [
+    Math.cos(theta) * BASIS.u[0] + Math.sin(theta) * BASIS.w[0],
+    Math.cos(theta) * BASIS.u[1] + Math.sin(theta) * BASIS.w[1],
+    Math.cos(theta) * BASIS.u[2] + Math.sin(theta) * BASIS.w[2],
+  ];
+
+  const lims = d.map((di) => {
+    if (di > EPS) return (cube_max - v) / di;
+    if (di < -EPS) return (v - cube_min) / -di;
+    return Infinity;
+  });
+
+  const rAllowed = Math.min(...lims) * safety;
+  radius = Math.min(radius, rAllowed);
+
+  const pt = [
+    clamp(v + radius * d[0], cube_min, cube_max),
+    clamp(v + radius * d[1], cube_min, cube_max),
+    clamp(v + radius * d[2], cube_min, cube_max),
+  ];
+  return pt;
+}
+
+function normalizeRange() {
+  // Keep renderer sliders and IPC payload pinned to python's fixed endpoints.
+  return { min: DEFAULT_RANGE.min, max: DEFAULT_RANGE.max };
+}
+
+function currentColor() {
   const d = new Date();
-  const mm =
-    d.getHours() * 60 +
-    d.getMinutes() +
-    d.getSeconds() / 60 +
-    d.getMilliseconds() / 60000;
-
-  let s;
-  if (mm < 720) {
-    s = 1 + mm / 720; // 1..2  (midnight -> noon)
-  } else {
-    s = (mm - 720) / 720; // 0..1 (noon -> midnight)
-  }
-
-  return helixColorAtS(s, start, end);
+  const mm = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60.0;
+  const s = minutesToS(mm);
+  const [r, g, b] = helixPointAtS(s);
+  return {
+    r: clampInt(r, CUBE_MIN, CUBE_MAX),
+    g: clampInt(g, CUBE_MIN, CUBE_MAX),
+    b: clampInt(b, CUBE_MIN, CUBE_MAX),
+  };
 }
 
 module.exports = { currentColor, normalizeRange };

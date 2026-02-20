@@ -17,7 +17,7 @@ let lastPayload = null;
 async function createMenubarApp() {
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 
-  let range = normalizeRange({ min: 30, max: 225 });
+  let range = normalizeRange({ min: 45, max: 210 });
 
   const broadcastRange = () => {
     if (win && !win.isDestroyed()) win.webContents.send("colorTime:range", range);
@@ -61,9 +61,17 @@ async function createMenubarApp() {
   const loadRange = () => {
     try {
       const raw = fs.readFileSync(rangePath, "utf8");
-      return normalizeRange(JSON.parse(raw));
+      const loaded = normalizeRange(JSON.parse(raw));
+      // Migrate legacy default range to the new helix endpoints.
+      if (
+        (loaded.min === 30 && loaded.max === 225) ||
+        (loaded.min === 25 && loaded.max === 230)
+      ) {
+        return normalizeRange({ min: 45, max: 210 });
+      }
+      return loaded;
     } catch {
-      return normalizeRange({ min: 30, max: 225 });
+      return normalizeRange({ min: 45, max: 210 });
     }
   };
 

@@ -11,7 +11,7 @@ const getLuminance = (bg: RGB) =>
 
 export default function ColorScreen() {
   const [payload, setPayload] = useState<ColorPayload | null>(null);
-  const [range, setRange] = useState<ColorRange>({ min: 25, max: 230 });
+  const [range, setRange] = useState<ColorRange>({ min: 45, max: 210 });
 
   useEffect(() => {
     colorTime.getColor().then(setPayload);
