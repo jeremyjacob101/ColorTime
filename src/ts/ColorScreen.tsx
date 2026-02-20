@@ -11,18 +11,13 @@ const getLuminance = (bg: RGB) =>
 
 export default function ColorScreen() {
   const [payload, setPayload] = useState<ColorPayload | null>(null);
-  const [range, setRange] = useState<ColorRange>({ min: 45, max: 210 });
 
   useEffect(() => {
     colorTime.getColor().then(setPayload);
     const unsubColor = colorTime.onColor(setPayload);
 
-    colorTime.getRange().then((r) => r && setRange(r));
-    const unsubRange = colorTime.onRange((r) => r && setRange(r));
-
     return () => {
       unsubColor();
-      unsubRange();
     };
   }, []);
 
@@ -41,21 +36,6 @@ export default function ColorScreen() {
   const textColor =
     getLuminance(rgb) > 0.65 ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.9)";
 
-  const applyRange = (next: ColorRange) => {
-    setRange(next);
-    colorTime.setRange(next);
-  };
-
-  const onMinChange = (v: number) => {
-    const nextMin = Math.max(0, Math.min(255, v));
-    applyRange({ min: Math.min(nextMin, range.max - 1), max: range.max });
-  };
-
-  const onMaxChange = (v: number) => {
-    const nextMax = Math.max(0, Math.min(255, v));
-    applyRange({ min: range.min, max: Math.max(nextMax, range.min + 1) });
-  };
-
   return (
     <div
       className="screen"
@@ -66,40 +46,6 @@ export default function ColorScreen() {
         <div className="values">
           rgb({rgb.r}, {rgb.g}, {rgb.b}) <span className="dot">•</span>{" "}
           {toHex(rgb)}
-        </div>
-
-        <div className="range-panel">
-          <div className="range-title">Range</div>
-
-          <div className="range-values">
-            <span>Low: {range.min}</span>
-            <span>High: {range.max}</span>
-          </div>
-
-          <div className="range-sliders">
-            <div className="range-row">
-              <span className="range-row-label">Low</span>
-              <input
-                id="range-min"
-                type="range"
-                min={0}
-                max={255}
-                value={range.min}
-                onChange={(e) => onMinChange(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="range-row">
-              <span className="range-row-label">High</span>
-              <input
-                type="range"
-                min={0}
-                max={255}
-                value={range.max}
-                onChange={(e) => onMaxChange(Number(e.target.value))}
-              />
-            </div>
-          </div>
         </div>
       </div>
     </div>

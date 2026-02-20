@@ -5,7 +5,7 @@ const fs = require("fs");
 const { createJiti } = require("jiti");
 const jiti = createJiti(__filename);
 
-const { currentColor, normalizeRange } = require("./colorOfDay.cjs");
+const { currentColor } = require("./colorOfDay.cjs");
 const { coloredCircleImage, coloredBarImage } = require("./trayIcon.cjs");
 const { createMyColorsWindow } = require("./myColorsWindow.cjs");
 
@@ -16,30 +16,6 @@ let lastPayload = null;
 
 async function createMenubarApp() {
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
-
-  let range = normalizeRange({ min: 45, max: 210 });
-
-  const broadcastRange = () => {
-    if (win && !win.isDestroyed()) win.webContents.send("colorTime:range", range);
-  };
-
-  const refreshNow = () => {
-    const rgb = currentColor(range);
-    lastPayload = { rgb, ts: Date.now() };
-
-    if (tray) tray.setImage(coloredCircleImage(rgb));
-    if (win && !win.isDestroyed())
-      win.webContents.send("colorTime:color", lastPayload);
-
-    updateTrayMenu(win?.isVisible?.() ?? false);
-  };
-
-  const setRange = (next) => {
-    range = normalizeRange(next);
-    saveRange(range);
-    broadcastRange();
-    refreshNow();
-  };
 
   Menu.setApplicationMenu(null);
 
@@ -54,34 +30,6 @@ async function createMenubarApp() {
       ColorsToRGB = {};
     }
   }
-
-  // ---- Range persistence ----
-  const rangePath = path.join(app.getPath("userData"), "range.json");
-
-  const loadRange = () => {
-    try {
-      const raw = fs.readFileSync(rangePath, "utf8");
-      const loaded = normalizeRange(JSON.parse(raw));
-      // Migrate legacy default range to the new helix endpoints.
-      if (
-        (loaded.min === 30 && loaded.max === 225) ||
-        (loaded.min === 25 && loaded.max === 230)
-      ) {
-        return normalizeRange({ min: 45, max: 210 });
-      }
-      return loaded;
-    } catch {
-      return normalizeRange({ min: 45, max: 210 });
-    }
-  };
-
-  const saveRange = (r) => {
-    try {
-      fs.writeFileSync(rangePath, JSON.stringify(r), "utf8");
-    } catch {}
-  };
-
-  range = loadRange();
 
   // ---- My Colors persistence ----
   const myColorsPath = path.join(app.getPath("userData"), "myColors.json");
@@ -246,7 +194,7 @@ async function createMenubarApp() {
   const updateTrayMenu = (isColorShown) => {
     if (!tray) return;
 
-    const rgb = lastPayload?.rgb || currentColor(range);
+    const rgb = lastPayload?.rgb || currentColor();
     const colorName = getClosestColorName(rgb);
     const alreadyAdded = myColorNames.includes(colorName);
     const canAdd =
@@ -313,7 +261,6 @@ async function createMenubarApp() {
     }
 
     win.webContents.on("did-finish-load", () => {
-      broadcastRange();
       broadcastMyColors();
     });
 
@@ -329,7 +276,7 @@ async function createMenubarApp() {
 
   function startClockLoop() {
     const tick = () => {
-      const rgb = currentColor(range);
+      const rgb = currentColor();
       lastPayload = { rgb, ts: Date.now() };
 
       if (tray) tray.setImage(coloredCircleImage(rgb));
@@ -345,14 +292,7 @@ async function createMenubarApp() {
 
   // ---- IPC ----
   ipcMain.handle("colorTime:getColor", () => {
-    return lastPayload || { rgb: currentColor(range), ts: Date.now() };
-  });
-
-  ipcMain.handle("colorTime:getRange", () => range);
-
-  ipcMain.handle("colorTime:setRange", (_evt, next) => {
-    setRange(next);
-    return range;
+    return lastPayload || { rgb: currentColor(), ts: Date.now() };
   });
 
   ipcMain.handle("colorTime:getMyColors", () => {
@@ -365,7 +305,7 @@ async function createMenubarApp() {
   });
 
   // ---- Tray ----
-  const initialColor = currentColor(range);
+  const initialColor = currentColor();
   tray = new Tray(coloredCircleImage(initialColor));
   tray.setToolTip("ColorTime");
   tray.on("mouse-enter", () => updateTrayMenu(win?.isVisible?.() ?? false));

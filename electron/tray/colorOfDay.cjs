@@ -1,18 +1,19 @@
 const TWO_PI = Math.PI * 2;
 const EPS = 1e-12;
 
-const DEFAULT_RANGE = { min: 45, max: 210 };
 const CUBE_MIN = 0.0;
 const CUBE_MAX = 255.0;
 
-// Fixed helix parameters from python/scripts/rgb_helix1.py (main()).
-const HELIX_START = 210.0;
-const HELIX_END = 45.0;
-const TURNS_EACH = 12.0;
-const R_MAX = 140.0;
-const SAFETY = 0.98;
-const THETA0 = Math.PI / 2;
-const RADIUS_POWER = 0.5;
+// Edit these values to change the helix everywhere in the app.
+const HELIX_CONFIG = {
+  start: 210.0,
+  end: 45.0,
+  turnsEach: 12.0,
+  rMax: 140.0,
+  safety: 0.98,
+  theta0: Math.PI / 2,
+  radiusPower: 0.5,
+};
 
 function clamp(v, lo, hi) {
   if (!Number.isFinite(v)) return lo;
@@ -69,13 +70,13 @@ function minutesToS(mm) {
 function helixPointAtS(
   s,
   {
-    start = HELIX_START,
-    end = HELIX_END,
-    turns_each = TURNS_EACH,
-    r_max = R_MAX,
-    safety = SAFETY,
-    theta0 = THETA0,
-    radius_power = RADIUS_POWER,
+    start = HELIX_CONFIG.start,
+    end = HELIX_CONFIG.end,
+    turns_each = HELIX_CONFIG.turnsEach,
+    r_max = HELIX_CONFIG.rMax,
+    safety = HELIX_CONFIG.safety,
+    theta0 = HELIX_CONFIG.theta0,
+    radius_power = HELIX_CONFIG.radiusPower,
     cube_min = CUBE_MIN,
     cube_max = CUBE_MAX,
   } = {},
@@ -113,11 +114,6 @@ function helixPointAtS(
   return pt;
 }
 
-function normalizeRange() {
-  // Keep renderer sliders and IPC payload pinned to python's fixed endpoints.
-  return { min: DEFAULT_RANGE.min, max: DEFAULT_RANGE.max };
-}
-
 function currentColor() {
   const d = new Date();
   const mm = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60.0;
@@ -130,4 +126,4 @@ function currentColor() {
   };
 }
 
-module.exports = { currentColor, normalizeRange };
+module.exports = { currentColor, HELIX_CONFIG };

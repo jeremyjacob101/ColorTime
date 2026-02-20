@@ -8,20 +8,6 @@ contextBridge.exposeInMainWorld("colorTime", {
     return () => ipcRenderer.removeListener("colorTime:color", handler);
   },
 
-  getRange: () => ipcRenderer.invoke("colorTime:getRange"),
-  setRange: (range) => ipcRenderer.invoke("colorTime:setRange", range),
-  onRange: (cb) => {
-    const handler = (_e, r) => cb(r);
-    ipcRenderer.on("colorTime:range", handler);
-    return () => ipcRenderer.removeListener("colorTime:range", handler);
-  },
-
-  onFocusRange: (cb) => {
-    const handler = () => cb();
-    ipcRenderer.on("colorTime:focusRange", handler);
-    return () => ipcRenderer.removeListener("colorTime:focusRange", handler);
-  },
-
   getMyColors: () => ipcRenderer.invoke("colorTime:getMyColors"),
   addMyColor: (name) => ipcRenderer.invoke("colorTime:addMyColor", name),
   onMyColors: (cb) => {

@@ -10,24 +10,6 @@ export const colorTime = {
     return window.colorTime?.onColor?.(cb) ?? noopUnsub;
   },
 
-  getRange: async (): Promise<ColorRange | null> => {
-    const r = await window.colorTime?.getRange?.();
-    return r ?? null;
-  },
-
-  setRange: async (range: ColorRange): Promise<ColorRange | null> => {
-    const r = await window.colorTime?.setRange?.(range);
-    return r ?? null;
-  },
-
-  onRange: (cb: (r: ColorRange) => void): (() => void) => {
-    return window.colorTime?.onRange?.(cb) ?? noopUnsub;
-  },
-
-  onFocusRange: (cb: () => void): (() => void) => {
-    return window.colorTime?.onFocusRange?.(cb) ?? noopUnsub;
-  },
-
   getMyColors: async (): Promise<MyColor[]> => {
     const items = await window.colorTime?.getMyColors?.();
     return Array.isArray(items) ? items : [];
