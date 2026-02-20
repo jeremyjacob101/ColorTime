@@ -15,12 +15,17 @@ def helix_roundtrip_diagonal(
     turns_each: float = 12.0,
     r_max: float = 135.0,
     safety: float = 0.98,
+    theta0: float = 0.0,  # NEW: initial angle offset (radians)
+    radius_power: float = 1.0,  # NEW: <1 ramps outward faster near endpoints
+    cube_min: float = 0.0,  # NEW: clamp to RGB cube
+    cube_max: float = 255.0,  # NEW: clamp to RGB cube
 ):
     if start < end:
         raise ValueError("start should be >= end (e.g. 220 down to 35).")
 
     s = np.linspace(0.0, 2.0, n_points)
 
+    # Diagonal value v goes start -> end -> start
     v = np.where(
         s <= 1.0,
         start + (end - start) * s,
@@ -28,8 +33,11 @@ def helix_roundtrip_diagonal(
     )
     base = np.stack([v, v, v], axis=1)
 
-    radius = r_max * (np.sin(np.pi * s) ** 2)
+    # Radius envelope (peaks mid-way, 0 at ends), with faster ramp if radius_power < 1
+    t = np.sin(np.pi * s) ** 2
+    radius = r_max * (t**radius_power)
 
+    # Orthonormal basis for plane perpendicular to axis (1,1,1)
     axis = np.array([1.0, 1.0, 1.0])
     axis = axis / np.linalg.norm(axis)
 
@@ -38,18 +46,26 @@ def helix_roundtrip_diagonal(
     u = u / np.linalg.norm(u)
     w = np.cross(axis, u)
 
-    amp = float(np.sqrt(u[0] ** 2 + w[0] ** 2))
-    dist_to_nearest_endpoint = np.minimum(v - end, start - v)
-    r_allowed = (dist_to_nearest_endpoint / amp) * safety
+    # Helix angle + initial phase
+    theta = 2.0 * np.pi * turns_each * s + theta0
+    d = (np.cos(theta))[:, None] * u + (np.sin(theta))[
+        :, None
+    ] * w  # direction in plane
+
+    # Clamp radius so that base + radius*d stays inside the RGB cube (0..255)
+    eps = 1e-12
+    vcol = v[:, None]
+
+    pos_lim = (cube_max - vcol) / np.clip(d, eps, None)  # for d > 0
+    neg_lim = (vcol - cube_min) / np.clip(-d, eps, None)  # for d < 0
+
+    lim = np.where(d > 0, pos_lim, np.where(d < 0, neg_lim, np.inf))
+    r_allowed = lim.min(axis=1) * safety
+
     radius = np.minimum(radius, r_allowed)
 
-    theta = 2.0 * np.pi * turns_each * s
-
-    offsets = (radius * np.cos(theta))[:, None] * u + (radius * np.sin(theta))[
-        :, None
-    ] * w
-    pts = base + offsets
-
+    pts = base + radius[:, None] * d
+    pts = np.clip(pts, cube_min, cube_max)
     return pts[:, 0], pts[:, 1], pts[:, 2]
 
 
@@ -60,6 +76,10 @@ def helix_point_at_s(
     turns_each: float = 12.0,
     r_max: float = 135.0,
     safety: float = 0.98,
+    theta0: float = 0.0,  # NEW
+    radius_power: float = 1.0,  # NEW
+    cube_min: float = 0.0,  # NEW
+    cube_max: float = 255.0,  # NEW
 ):
     if start < end:
         raise ValueError("start should be >= end.")
@@ -70,7 +90,8 @@ def helix_point_at_s(
     else:
         v = end + (start - end) * (s - 1.0)
 
-    radius = r_max * (np.sin(np.pi * s) ** 2)
+    t = np.sin(np.pi * s) ** 2
+    radius = r_max * (t**radius_power)
 
     axis = np.array([1.0, 1.0, 1.0])
     axis = axis / np.linalg.norm(axis)
@@ -80,23 +101,31 @@ def helix_point_at_s(
     u = u / np.linalg.norm(u)
     w = np.cross(axis, u)
 
-    amp = float(np.sqrt(u[0] ** 2 + w[0] ** 2))
-    dist_to_nearest_endpoint = min(v - end, start - v)
-    r_allowed = (dist_to_nearest_endpoint / amp) * safety
+    theta = 2.0 * np.pi * turns_each * s + theta0
+    d = np.cos(theta) * u + np.sin(theta) * w  # direction in plane
+
+    # Clamp radius to stay inside RGB cube
+    lims = []
+    for di in d:
+        if di > 1e-12:
+            lims.append((cube_max - v) / di)
+        elif di < -1e-12:
+            lims.append((v - cube_min) / (-di))
+        else:
+            lims.append(float("inf"))
+
+    r_allowed = min(lims) * safety
     radius = min(radius, r_allowed)
 
-    theta = 2.0 * np.pi * turns_each * s
-    offset = radius * np.cos(theta) * u + radius * np.sin(theta) * w
-    pt = np.array([v, v, v]) + offset
-
-    pt = np.clip(pt, 0.0, 255.0)
+    pt = np.array([v, v, v]) + radius * d
+    pt = np.clip(pt, cube_min, cube_max)
     return float(pt[0]), float(pt[1]), float(pt[2])
 
 
 def minutes_to_s(mm: float) -> float:
     """
     Map minutes since midnight (0..1440) to helix parameter s (0..2),
-    with midnight at s=1 (your helix "bottom"), noon at s=0/2 (top).
+    with midnight at s=1 (helix "bottom"), noon at s=0/2 (top).
       00:00 -> s=1
       12:00 -> s=2 (equivalent to s=0)
       24:00 -> s=1
@@ -141,8 +170,7 @@ def brightness(r: int, g: int, b: int) -> float:
 
 def mm_to_hhmm(mm: float) -> str:
     mm = int(round(mm))
-    if mm >= 1440:
-        mm = 1440
+    mm = max(0, min(1440, mm))
     h = mm // 60
     m = mm % 60
     return f"{h:02d}:{m:02d}"
@@ -187,13 +215,20 @@ def main():
 
     ax.scatter(R, G, B, c=point_colors, s=30, depthshade=True)
 
-    # --- Helix path ---
-    start_v = 225.0
-    end_v = 30.0
+    # --- Helix params ---
+    # Inward endpoints (so you aren't near pure white/black around noon/midnight)
+    start_v = 210.0
+    end_v = 45.0
+
     turns_each = 12
     r_max = 140.0
     safety = 0.98
 
+    # NEW knobs:
+    theta0 = np.pi / 2  # initial angle offset (rotates the helix direction right away)
+    radius_power = 0.5  # <1 => reaches outward faster near endpoints (try 0.4..0.7)
+
+    # --- Helix path ---
     sx, sy, sz = helix_roundtrip_diagonal(
         start=start_v,
         end=end_v,
@@ -201,6 +236,8 @@ def main():
         turns_each=turns_each,
         r_max=r_max,
         safety=safety,
+        theta0=theta0,
+        radius_power=radius_power,
     )
     ax.plot(sx, sy, sz, linewidth=4, color="black", alpha=0.98)
 
@@ -213,6 +250,8 @@ def main():
         turns_each=turns_each,
         r_max=r_max,
         safety=safety,
+        theta0=theta0,
+        radius_power=radius_power,
     )
     curr_dot = ax.scatter([cx], [cy], [cz], s=220, color="black", depthshade=False)
     label3d = ax.text(cx, cy, cz, " time", fontsize=10)
@@ -233,7 +272,6 @@ def main():
     swatch_ax.set_ylim(0, 1)
     swatch_ax.axis("off")
 
-    # initial swatch uses the helix marker's RGB (quantized)
     r0, g0, b0 = int(round(cx)), int(round(cy)), int(round(cz))
     swatch_circle = Circle(
         (0.5, 0.5),
@@ -244,10 +282,11 @@ def main():
     )
     swatch_ax.add_patch(swatch_circle)
 
+    now_mm_int = dt.datetime.now().hour * 60 + dt.datetime.now().minute
     swatch_label = fig.text(
         0.62,
         0.09,
-        f"{mm_to_hhmm(dt.datetime.now().hour*60 + dt.datetime.now().minute)} -> ({r0}, {g0}, {b0})",
+        f"{mm_to_hhmm(now_mm_int)} -> ({r0}, {g0}, {b0})",
         fontsize=10,
     )
 
@@ -257,11 +296,12 @@ def main():
         label="Time of day",
         valmin=0.0,
         valmax=1440.0,
-        valinit=dt.datetime.now().hour * 60 + dt.datetime.now().minute,
+        valinit=now_mm_int,
         valstep=1.0,
     )
 
-    dragging = {"active": False}
+    # Manual mode: user touched slider => freeze "live" updates
+    manual_mode = {"active": False}
 
     def proj3d_points(ax_, xs, ys, zs):
         x2, y2, z2 = proj3d.proj_transform(xs, ys, zs, ax_.get_proj())
@@ -293,14 +333,14 @@ def main():
             turns_each=turns_each,
             r_max=r_max,
             safety=safety,
+            theta0=theta0,
+            radius_power=radius_power,
         )
 
-        # update 3D marker + label
         curr_dot._offsets3d = ([x], [y], [z])
         label3d.set_position((x, y))
         label3d.set_3d_properties(z, zdir="z")
 
-        # swatch = quantized RGB from helix point
         rr, gg, bb = int(round(x)), int(round(y)), int(round(z))
         swatch_circle.set_facecolor((rr / 255.0, gg / 255.0, bb / 255.0))
         swatch_label.set_text(f"{mm_to_hhmm(mm)} -> ({rr}, {gg}, {bb})")
@@ -308,29 +348,35 @@ def main():
         fig.canvas.draw_idle()
 
     def on_slider_change(val):
-        dragging["active"] = True
         set_marker_from_minutes(val)
 
     time_slider.on_changed(on_slider_change)
 
-    # Detect release so timer can resume "live now" mode if you want
-    def on_release(event):
-        # If released over the slider area, stop "dragging" but keep the chosen time
+    def on_press(event):
+        # If user clicks/presses in the slider area, go manual
         if event.inaxes == slider_ax:
-            dragging["active"] = True  # stay in manual mode
+            manual_mode["active"] = True
 
-    fig.canvas.mpl_connect("button_release_event", on_release)
+    fig.canvas.mpl_connect("button_press_event", on_press)
 
-    # --- Optional: keep auto-updating only when NOT in manual mode
+    def on_key(event):
+        # Press "l" to return to live mode
+        if event.key == "l":
+            manual_mode["active"] = False
+
+    fig.canvas.mpl_connect("key_press_event", on_key)
+
     def update_now():
-        if dragging["active"]:
+        if manual_mode["active"]:
             return
         mm_now = (
             dt.datetime.now().hour * 60
             + dt.datetime.now().minute
             + dt.datetime.now().second / 60.0
         )
-        time_slider.set_val(mm_now)  # this will call on_slider_change
+        # Update marker directly (avoid setting slider val triggering manual)
+        set_marker_from_minutes(mm_now)
+        time_slider.set_val(mm_now)
 
     timer = fig.canvas.new_timer(interval=1000)
     timer.add_callback(update_now)
