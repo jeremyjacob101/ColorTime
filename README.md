@@ -14,14 +14,14 @@
 </p>
 
 <p align="center">
-  <sub><strong>Screenshot slot reserved:</strong> add one image at <code>docs/images/colortime-screenshot.png</code>.</sub>
+  <sub><strong>Hero image:</strong> add the supplied <strong>My Colors</strong> screenshot at <code>docs/images/colortime-screenshot.png</code>.</sub>
 </p>
 
 <!--
 Uncomment this block after adding docs/images/colortime-screenshot.png
 
 <p align="center">
-  <img src="docs/images/colortime-screenshot.png" alt="ColorTime screenshot" width="900" />
+  <img src="docs/images/colortime-screenshot.png" alt="ColorTime My Colors screenshot" width="900" />
 </p>
 -->
 
@@ -218,11 +218,7 @@ docs/images/colortime-screenshot.png
 
 Then uncomment the image block near the top of this README.
 
-If you want, the best single shot is:
-
-- the tray menu open
-- the live color window visible
-- or the main color popup if you want the cleanest hero image
+The screenshot you posted is a good fit for the README hero because it shows the app's strongest visual surface clearly.
 
 ## License
 
