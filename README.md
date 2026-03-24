@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/colortime-screenshot.png" alt="ColorTime My Colors screenshot" width="900" />
+  <img src="docs/images/colortime-screenshot.png" alt="ColorTime My Colors screenshot" width="420" />
 </p>
 
 ## Color, Flowing
