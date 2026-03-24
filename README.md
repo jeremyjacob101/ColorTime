@@ -14,16 +14,8 @@
 </p>
 
 <p align="center">
-  <sub><strong>Hero image:</strong> add the supplied <strong>My Colors</strong> screenshot at <code>docs/images/colortime-screenshot.png</code>.</sub>
-</p>
-
-<!--
-Uncomment this block after adding docs/images/colortime-screenshot.png
-
-<p align="center">
   <img src="docs/images/colortime-screenshot.png" alt="ColorTime My Colors screenshot" width="900" />
 </p>
--->
 
 ## Color, Flowing
 
@@ -216,7 +208,7 @@ When you are ready, put your screenshot here:
 docs/images/colortime-screenshot.png
 ```
 
-Then uncomment the image block near the top of this README.
+The README now references that file directly near the top.
 
 The screenshot you posted is a good fit for the README hero because it shows the app's strongest visual surface clearly.
 
